@@ -436,7 +436,7 @@ func FD_SET(p *unix.FdSet, i int) {
 	p.Bits[i/l] |= 1 << uintptr(i%l)
 }
 
-func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
+func waitForFrame(fd uintptr, timeout uint32) error {
 
 	for {
 		fds := &unix.FdSet{}
@@ -447,12 +447,11 @@ func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
 		nativeTimeVal := unix.NsecToTimeval(timeoutNsec)
 		tv := &nativeTimeVal
 
-		count, err = unix.Select(int(fd+1), fds, nil, nil, tv)
-
-		if count < 0 && err == unix.EINTR {
-			continue
+		err := unix.Select(int(fd+1), fds, nil, nil, tv)
+		if err != nil {
+			return err
 		}
-		return
+		return nil
 	}
 
 }

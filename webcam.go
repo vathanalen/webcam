@@ -5,9 +5,10 @@ package webcam
 
 import (
 	"errors"
-	"golang.org/x/sys/unix"
 	"reflect"
 	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
 // Webcam object
@@ -232,7 +233,7 @@ func (w *Webcam) ReleaseFrame(index uint32) error {
 	return mmapEnqueueBuffer(w.fd, index)
 }
 
-// Wait until frame could be read
+/* // Wait until frame could be read
 func (w *Webcam) WaitForFrame(timeout uint32) error {
 
 	count, err := waitForFrame(w.fd, timeout)
@@ -244,7 +245,7 @@ func (w *Webcam) WaitForFrame(timeout uint32) error {
 	} else {
 		return nil
 	}
-}
+} */
 
 func (w *Webcam) StopStreaming() error {
 	if !w.streaming {
