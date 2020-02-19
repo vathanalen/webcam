@@ -27,6 +27,12 @@ type Control struct {
 	Max  int32
 }
 
+type DeviceCapabilities struct {
+	Name    string
+	Driver  string
+	BusInfo string
+}
+
 // Open a webcam with a given path
 // Checks if device is a v4l2 device and if it is
 // capable to stream video
@@ -288,4 +294,16 @@ func gobytes(p unsafe.Pointer, n int) []byte {
 	s := *(*[]byte)(unsafe.Pointer(&h))
 
 	return s
+}
+
+func (w *Webcam) GetCapabilities() (*DeviceCapabilities, error) {
+	devCap := &DeviceCapabilities{}
+	caps, err := getCapabilities(w.fd)
+	if err != nil {
+		return devCap, err
+	}
+	devCap.Name = string(caps.card[:])
+	devCap.BusInfo = string(caps.bus_info[:])
+	devCap.Driver = string(caps.driver[:])
+	return devCap, nil
 }

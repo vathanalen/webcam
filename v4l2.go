@@ -219,6 +219,18 @@ func checkCapabilities(fd uintptr) (supportsVideoCapture bool, supportsVideoStre
 
 }
 
+func getCapabilities(fd uintptr) (deviceCaps *v4l2_capability, err error) {
+
+	caps := &v4l2_capability{}
+
+	err = ioctl.Ioctl(fd, VIDIOC_QUERYCAP, uintptr(unsafe.Pointer(caps)))
+
+	if err != nil {
+		return
+	}
+	return caps, nil
+}
+
 func getPixelFormat(fd uintptr, index uint32) (code uint32, description string, err error) {
 
 	fmtdesc := &v4l2_fmtdesc{}
