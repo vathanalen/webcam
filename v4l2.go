@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"unsafe"
 
-	"github.com/blackjack/webcam/ioctl"
+	"github.com/vathanalen/webcam/ioctl"
 	"golang.org/x/sys/unix"
 )
 
@@ -459,7 +459,7 @@ func waitForFrame(fd uintptr, timeout uint32) error {
 		nativeTimeVal := unix.NsecToTimeval(timeoutNsec)
 		tv := &nativeTimeVal
 
-		err := unix.Select(int(fd+1), fds, nil, nil, tv)
+		_, err := unix.Select(int(fd+1), fds, nil, nil, tv)
 		if err != nil {
 			return err
 		}

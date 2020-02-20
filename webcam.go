@@ -4,8 +4,13 @@
 package webcam
 
 import (
+	"bytes"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/unix"
@@ -13,6 +18,7 @@ import (
 
 // Webcam object
 type Webcam struct {
+	path      string
 	fd        uintptr
 	bufcount  uint32
 	buffers   [][]byte
@@ -29,8 +35,9 @@ type Control struct {
 
 type DeviceCapabilities struct {
 	Name    string
-	Driver  string
+	Path    string
 	BusInfo string
+	ID      string
 }
 
 // Open a webcam with a given path
@@ -62,6 +69,7 @@ func Open(path string) (*Webcam, error) {
 	w := new(Webcam)
 	w.fd = uintptr(fd)
 	w.bufcount = 256
+	w.path = path
 	return w, nil
 }
 
@@ -302,8 +310,44 @@ func (w *Webcam) GetCapabilities() (*DeviceCapabilities, error) {
 	if err != nil {
 		return devCap, err
 	}
-	devCap.Name = string(caps.card[:])
+	devCap.Name = string(bytes.Trim(caps.card[:], "\x00"))
 	devCap.BusInfo = string(caps.bus_info[:])
-	devCap.Driver = string(caps.driver[:])
+	devCap.Path = string(w.path)
+	devCap.ID = strings.TrimPrefix(devCap.Path, "/dev/")
 	return devCap, nil
+}
+
+func ListDevices() []DeviceCapabilities {
+	devices := make(map[int]string)
+	var capList []DeviceCapabilities
+	filepath.Walk("/dev", func(path string, fInfo os.FileInfo, _ error) error {
+		if fInfo == nil || fInfo.Mode()&os.ModeCharDevice == 0 {
+			return nil
+		}
+		var stat syscall.Stat_t
+		if err := syscall.Stat(path, &stat); err != nil {
+			return nil
+		}
+		major, minor := int(stat.Rdev>>8), int(stat.Rdev&255)
+		if major != 81 {
+			return nil
+		}
+		if _, ok := devices[minor]; ok {
+			return nil
+		}
+		w, err := Open(path)
+		if err != nil {
+			return nil
+		}
+		defer w.Close()
+		cap, err := w.GetCapabilities()
+		if err != nil {
+			return nil
+		}
+
+		capList = append(capList, *cap)
+		devices[minor] = path
+		return nil
+	})
+	return capList
 }
